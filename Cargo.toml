@@ -1,0 +1,20 @@
+[package]
+name = "dma-heaps"
+version = "0.1.0"
+authors = ["Maxime Ripard <maxime@cerno.tech>"]
+description = "Linux DMA-Buf Heaps Abstraction Library"
+edition = "2018"
+readme = "README.md"
+license-file = "LICENSE"
+keywords = ["linux", "dma", "dma-buf", "heaps"]
+categories = ["api-bindings", "os::linux-apis"]
+repository = "https://github.com/mripard/dma-heaps/"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nix = "~0.20"
+log = "~0.4"
+strum = "~0.20"
+strum_macros = "~0.20"
+thiserror = "~1.0"
