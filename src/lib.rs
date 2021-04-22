@@ -137,7 +137,7 @@ impl DmaBufHeap {
 
         let _ = unsafe { dma_heap_alloc(self.file.as_raw_fd(), &mut data) }?;
 
-        debug!("Allocation succeeded, Buffer FD {}", data.fd);
+        debug!("Allocation succeeded, Buffer File Descriptor {}", data.fd);
 
         Ok(DmaBuf {
             fd: data.fd as RawFd,
