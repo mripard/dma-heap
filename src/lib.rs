@@ -122,9 +122,13 @@ impl DmaBufHeap {
     ///
     /// Will return [Error] if the underlying ioctl fails.
     pub fn allocate(&self, len: usize) -> Result<DmaBuf> {
+        let mut fd_flags = nix::fcntl::OFlag::empty();
+
+        fd_flags.insert(nix::fcntl::OFlag::O_CLOEXEC);
+
         let mut data = dma_heap_allocation_data {
             len: len as u64,
-            fd_flags: nix::fcntl::OFlag::O_CLOEXEC.bits() as u32,
+            fd_flags: fd_flags.bits() as u32,
             ..dma_heap_allocation_data::default()
         };
 
