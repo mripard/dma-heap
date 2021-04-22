@@ -13,6 +13,8 @@
 //! # Hello World
 //!
 //! ```no_run
+//! use dma_heap::{DmaBufHeap, DmaBufHeapType};
+//!
 //! let heap = DmaBufHeap::new(DmaBufHeapType::Cma)
 //!     .unwrap();
 //!
