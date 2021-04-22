@@ -1,6 +1,6 @@
-# DMA-Buf Heaps Helper Library
+# DMA-Buf Heap Helper Library
 
-The DMA-Buf Heaps interface in Linux is aimed at providing a way for the user-space to allocate
+The DMA-Buf Heap interface in Linux is aimed at providing a way for the user-space to allocate
 memory buffers that can be efficiently shared between multiple devices through the DMA-Buf
 mechanism. It aims at superseeding the ION Interface previously found in Android.
 

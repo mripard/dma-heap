@@ -2,9 +2,9 @@
 // Licensed under the MIT License
 // See the LICENSE file or <http://opensource.org/licenses/MIT>
 //
-//! # DMA-Buf Heaps Helper Library
+//! # DMA-Buf Heap Helper Library
 //!
-//! The DMA-Buf Heaps interface in Linux is aimed at providing a way for the user-space to allocate
+//! The DMA-Buf Heap interface in Linux is aimed at providing a way for the user-space to allocate
 //! memory buffers that can be efficiently shared between multiple devices through the DMA-Buf
 //! mechanism. It aims at superseeding the ION Interface previously found in Android.
 //!
@@ -42,7 +42,7 @@ use ioctl::dma_heap_allocation_data;
 use log::debug;
 use strum_macros::Display;
 
-/// Error Type for dma-heaps
+/// Error Type for dma-heap
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     /// An Error happened when allocating a buffer
@@ -57,7 +57,7 @@ pub enum Error {
 /// Generic Result type with [Error] as its error variant
 pub type Result<T> = std::result::Result<T, Error>;
 
-/// Various Types of DMA-Buf Heaps
+/// Various Types of DMA-Buf Heap
 #[derive(Clone, Copy, Debug, Display)]
 pub enum DmaBufHeapType {
     /// A Heap backed by the Contiguous Memory Allocator in the Linux kernel, returning physically

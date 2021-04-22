@@ -1,14 +1,14 @@
 [package]
-name = "dma-heaps"
+name = "dma-heap"
 version = "0.1.0"
 authors = ["Maxime Ripard <maxime@cerno.tech>"]
-description = "Linux DMA-Buf Heaps Abstraction Library"
+description = "Linux DMA-Buf Heap Abstraction Library"
 edition = "2018"
 readme = "README.md"
 license-file = "LICENSE"
-keywords = ["linux", "dma", "dma-buf", "heaps"]
+keywords = ["linux", "dma", "dma-buf", "heap"]
 categories = ["api-bindings", "os::linux-apis"]
-repository = "https://github.com/mripard/dma-heaps/"
+repository = "https://github.com/mripard/dma-heap/"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
