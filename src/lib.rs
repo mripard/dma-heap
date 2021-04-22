@@ -69,25 +69,6 @@ pub enum DmaBufHeapType {
     System,
 }
 
-/// A DMA-Buf buffer
-#[derive(Debug)]
-pub struct DmaBuf {
-    fd: RawFd,
-}
-
-impl AsRawFd for DmaBuf {
-    fn as_raw_fd(&self) -> RawFd {
-        self.fd
-    }
-}
-
-impl Drop for DmaBuf {
-    fn drop(&mut self) {
-        debug!("Closing buffer {}", self.fd);
-        nix::unistd::close(self.fd).unwrap();
-    }
-}
-
 /// Our DMA-Buf Heap
 #[derive(Debug)]
 pub struct DmaBufHeap {
@@ -121,7 +102,7 @@ impl DmaBufHeap {
     /// # Errors
     ///
     /// Will return [Error] if the underlying ioctl fails.
-    pub fn allocate(&self, len: usize) -> Result<DmaBuf> {
+    pub fn allocate(&self, len: usize) -> Result<RawFd> {
         let mut fd_flags = nix::fcntl::OFlag::empty();
 
         fd_flags.insert(nix::fcntl::OFlag::O_CLOEXEC);
@@ -139,8 +120,6 @@ impl DmaBufHeap {
 
         debug!("Allocation succeeded, Buffer File Descriptor {}", data.fd);
 
-        Ok(DmaBuf {
-            fd: data.fd as RawFd,
-        })
+        Ok(data.fd as RawFd)
     }
 }
