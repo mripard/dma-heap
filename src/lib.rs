@@ -125,6 +125,7 @@ impl DmaBufHeap {
         let mut fd_flags = nix::fcntl::OFlag::empty();
 
         fd_flags.insert(nix::fcntl::OFlag::O_CLOEXEC);
+        fd_flags.insert(nix::fcntl::OFlag::O_RDWR);
 
         let mut data = dma_heap_allocation_data {
             len: len as u64,
