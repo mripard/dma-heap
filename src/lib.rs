@@ -13,7 +13,7 @@
 //! # Hello World
 //!
 //! ```no_run
-//! let heap = DmaBufHeap::new(DmaBufHeapType::CMA)
+//! let heap = DmaBufHeap::new(DmaBufHeapType::Cma)
 //!     .unwrap();
 //!
 //! let buffer = heap.allocate(1024).unwrap();
@@ -62,7 +62,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum DmaBufHeapType {
     /// A Heap backed by the Contiguous Memory Allocator in the Linux kernel, returning physically
     /// contiguous, cached, buffers
-    CMA,
+    Cma,
 
     /// A Heap backed by the vmalloc allocator in the Linux kernel, returning virtually contiguous,
     /// cached, buffers
@@ -84,7 +84,7 @@ impl DmaBufHeap {
     /// Will return [Error] if the Heap Type is not found in the system, or if the open call fails.
     pub fn new(name: DmaBufHeapType) -> Result<Self> {
         let path = match name {
-            DmaBufHeapType::CMA => "/dev/dma_heap/reserved",
+            DmaBufHeapType::Cma => "/dev/dma_heap/reserved",
             DmaBufHeapType::System => "/dev/dma_heap/system",
         };
 
