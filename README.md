@@ -12,5 +12,8 @@ This library provides a safe abstraction over this interface for Rust.
 let heap = DmaBufHeap::new(DmaBufHeapType::CMA)
     .unwrap();
 
-let buffer = heap.allocate(1024).unwrap();
+// Buffer will automatically be freed when `buffer_file` goes out of scope.
+let buffer_file: File = heap.allocate(1024).unwrap();
+// Buffer lifetime must be manually managed.
+let buffer_rawfd: RawFd = heap.allocate(1024).unwrap();
 ```

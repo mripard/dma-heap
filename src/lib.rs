@@ -13,12 +13,17 @@
 //! # Hello World
 //!
 //! ```no_run
+//! use std::fs::File;
+//! use std::os::unix::io::RawFd;
 //! use dma_heap::{DmaBufHeap, DmaBufHeapType};
 //!
 //! let heap = DmaBufHeap::new(DmaBufHeapType::Cma)
 //!     .unwrap();
 //!
-//! let buffer = heap.allocate(1024).unwrap();
+//! // Buffer will automatically be freed when `buffer_file` goes out of scope.
+//! let buffer_file: File = heap.allocate(1024).unwrap();
+//! // Buffer lifetime must be manually managed.
+//! let buffer_rawfd: RawFd = heap.allocate(1024).unwrap();
 //! ```
 
 #![warn(missing_debug_implementations)]
@@ -34,7 +39,7 @@
 
 use std::{
     fs::File,
-    os::unix::io::{AsRawFd, RawFd},
+    os::unix::io::{AsRawFd, FromRawFd, RawFd},
 };
 
 mod ioctl;
@@ -104,7 +109,7 @@ impl DmaBufHeap {
     /// # Errors
     ///
     /// Will return [Error] if the underlying ioctl fails.
-    pub fn allocate(&self, len: usize) -> Result<RawFd> {
+    pub fn allocate<T: FromRawFd>(&self, len: usize) -> Result<T> {
         let mut fd_flags = nix::fcntl::OFlag::empty();
 
         fd_flags.insert(nix::fcntl::OFlag::O_CLOEXEC);
@@ -122,6 +127,8 @@ impl DmaBufHeap {
 
         debug!("Allocation succeeded, Buffer File Descriptor {}", data.fd);
 
-        Ok(data.fd as RawFd)
+        // Safe because we have confirmed that the ioctl has succeeded, thus
+        // the FD is valid.
+        Ok(unsafe { T::from_raw_fd(data.fd as RawFd) })
     }
 }
