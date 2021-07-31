@@ -9,7 +9,7 @@ This library provides a safe abstraction over this interface for Rust.
 # Hello World
 
 ```no_run
-let heap = DmaBufHeap::new(DmaBufHeapType::CMA)
+let heap = DmaBufHeap::new(DmaBufHeapType::Cma)
     .unwrap();
 
 // Buffer will automatically be freed when `buffer_file` goes out of scope.
