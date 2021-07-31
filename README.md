@@ -9,6 +9,10 @@ This library provides a safe abstraction over this interface for Rust.
 # Hello World
 
 ```rust,no_run
+use std::fs::File;
+use std::os::unix::io::RawFd;
+use dma_heap::{DmaBufHeap, DmaBufHeapType};
+
 let heap = DmaBufHeap::new(DmaBufHeapType::Cma)
     .unwrap();
 
