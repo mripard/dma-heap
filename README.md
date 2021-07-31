@@ -8,12 +8,17 @@ This library provides a safe abstraction over this interface for Rust.
 
 # Hello World
 
-```no_run
-let heap = DmaBufHeap::new(DmaBufHeapType::CMA)
+```rust,no_run
+use std::fs::File;
+use std::os::unix::io::RawFd;
+use dma_heap::{DmaBufHeap, DmaBufHeapType};
+
+let heap = DmaBufHeap::new(DmaBufHeapType::Cma)
     .unwrap();
 
 // Buffer will automatically be freed when `buffer_file` goes out of scope.
 let buffer_file: File = heap.allocate(1024).unwrap();
+
 // Buffer lifetime must be manually managed.
 let buffer_rawfd: RawFd = heap.allocate(1024).unwrap();
 ```
