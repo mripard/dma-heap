@@ -13,10 +13,11 @@
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::unreadable_literal)]
+#![allow(clippy::use_self)]
 
 use std::{
     fs::File,
-    os::unix::io::{AsRawFd, FromRawFd, RawFd},
+    os::unix::io::{AsRawFd, FromRawFd, OwnedFd, RawFd},
 };
 
 mod ioctl;
@@ -86,7 +87,7 @@ impl DmaBufHeap {
     /// # Errors
     ///
     /// Will return [Error] if the underlying ioctl fails.
-    pub fn allocate<T: FromRawFd>(&self, len: usize) -> Result<T> {
+    pub fn allocate(&self, len: usize) -> Result<OwnedFd> {
         let mut fd_flags = nix::fcntl::OFlag::empty();
 
         fd_flags.insert(nix::fcntl::OFlag::O_CLOEXEC);
@@ -106,6 +107,6 @@ impl DmaBufHeap {
 
         // Safe because we have confirmed that the ioctl has succeeded, thus
         // the FD is valid.
-        Ok(unsafe { T::from_raw_fd(data.fd as RawFd) })
+        Ok(unsafe { OwnedFd::from_raw_fd(data.fd as RawFd) })
     }
 }
