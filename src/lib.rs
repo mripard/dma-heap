@@ -13,6 +13,7 @@
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::unreadable_literal)]
+#![allow(clippy::use_self)]
 
 use std::{
     fs::File,
