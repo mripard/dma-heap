@@ -8,7 +8,6 @@
 #![warn(rust_2018_idioms)]
 #![deny(clippy::all)]
 #![deny(clippy::pedantic)]
-#![deny(clippy::nursery)]
 #![deny(clippy::cargo)]
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::cast_sign_loss)]
