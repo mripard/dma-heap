@@ -30,13 +30,27 @@ use strum_macros::Display;
 /// Error Type for dma-heap
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    /// An Error happened when allocating a buffer
-    #[error("Couldn't allocate the buffer")]
-    Allocation(#[from] nix::Error),
+    /// The requested DMA Heap doesn't exist
+    #[error("The Requested DMA Heap Type ({0}) doesn't exist: {1}")]
+    Missing(DmaBufHeapType, String),
 
-    /// An Error happened when opening the Heap
-    #[error("Couldn't open the DMA-Buf Heap")]
-    Open(#[from] std::io::Error),
+    /// An Error occured while accessing the DMA Heap
+    #[error("An Error occurred while accessing the DMA Heap")]
+    Access(std::io::Error),
+
+    /// The allocation is invalid
+    #[error("The requested allocation is invalid: {0} bytes")]
+    InvalidAllocation(usize),
+
+    /// There is no memory left to allocate from the DMA Heap
+    #[error("No Memory Left in the Heap")]
+    NoMemoryLeft,
+}
+
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Self {
+        Self::Access(err)
+    }
 }
 
 /// Generic Result type with [Error] as its error variant
@@ -75,7 +89,10 @@ impl DmaBufHeap {
 
         debug!("Using the {} DMA-Buf Heap, at {}", name, path);
 
-        let file = File::open(path)?;
+        let file = File::open(path).map_err(|err| match err.kind() {
+            std::io::ErrorKind::NotFound => Error::Missing(name, String::from(path)),
+            _ => Error::from(err),
+        })?;
 
         debug!("Heap found!");
 
@@ -83,6 +100,11 @@ impl DmaBufHeap {
     }
 
     /// Allocates a DMA-Buf from the Heap with the specified size
+    ///
+    /// # Panics
+    ///
+    /// If the errno returned by the underlying `ioctl()` cannot be decoded
+    /// into an `std::io::Error`.
     ///
     /// # Errors
     ///
@@ -101,7 +123,15 @@ impl DmaBufHeap {
 
         debug!("Allocating Buffer of size {} on {} Heap", len, self.name);
 
-        let _ = unsafe { dma_heap_alloc(self.file.as_raw_fd(), &mut data) }?;
+        unsafe { dma_heap_alloc(self.file.as_raw_fd(), &mut data) }.map_err(|err| {
+            let err: std::io::Error = err.try_into().unwrap();
+
+            match err.kind() {
+                std::io::ErrorKind::InvalidInput => Error::InvalidAllocation(len),
+                std::io::ErrorKind::OutOfMemory => Error::NoMemoryLeft,
+                _ => Error::from(err),
+            }
+        })?;
 
         debug!("Allocation succeeded, Buffer File Descriptor {}", data.fd);
 
