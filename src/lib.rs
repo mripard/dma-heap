@@ -32,7 +32,7 @@ use strum_macros::Display;
 pub enum Error {
     /// The requested DMA Heap doesn't exist
     #[error("The Requested DMA Heap Type ({0}) doesn't exist: {1}")]
-    Missing(DmaBufHeapType, String),
+    Missing(HeapKind, String),
 
     /// An Error occured while accessing the DMA Heap
     #[error("An Error occurred while accessing the DMA Heap")]
@@ -58,7 +58,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Various Types of DMA-Buf Heap
 #[derive(Clone, Copy, Debug, Display)]
-pub enum DmaBufHeapType {
+pub enum HeapKind {
     /// A Heap backed by the Contiguous Memory Allocator in the Linux kernel, returning physically
     /// contiguous, cached, buffers
     Cma,
@@ -72,7 +72,7 @@ pub enum DmaBufHeapType {
 #[derive(Debug)]
 pub struct DmaBufHeap {
     file: File,
-    name: DmaBufHeapType,
+    name: HeapKind,
 }
 
 impl DmaBufHeap {
@@ -81,10 +81,10 @@ impl DmaBufHeap {
     /// # Errors
     ///
     /// Will return [Error] if the Heap Type is not found in the system, or if the open call fails.
-    pub fn new(name: DmaBufHeapType) -> Result<Self> {
+    pub fn new(name: HeapKind) -> Result<Self> {
         let path = match name {
-            DmaBufHeapType::Cma => "/dev/dma_heap/reserved",
-            DmaBufHeapType::System => "/dev/dma_heap/system",
+            HeapKind::Cma => "/dev/dma_heap/linux,cma",
+            HeapKind::System => "/dev/dma_heap/system",
         };
 
         debug!("Using the {} DMA-Buf Heap, at {}", name, path);
