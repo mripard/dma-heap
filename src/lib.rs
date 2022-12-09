@@ -70,12 +70,12 @@ pub enum HeapKind {
 
 /// Our DMA-Buf Heap
 #[derive(Debug)]
-pub struct DmaBufHeap {
+pub struct Heap {
     file: File,
     name: HeapKind,
 }
 
-impl DmaBufHeap {
+impl Heap {
     /// Opens A DMA-Buf Heap of the specified type
     ///
     /// # Errors
