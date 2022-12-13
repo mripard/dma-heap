@@ -10,9 +10,9 @@ This library provides a safe abstraction over this interface for Rust.
 
 ```rust,no_run
 use std::os::unix::io::OwnedFd;
-use dma_heap::{DmaBufHeap, DmaBufHeapType};
+use dma_heap::{Heap, HeapKind};
 
-let heap = DmaBufHeap::new(DmaBufHeapType::Cma)
+let heap = Heap::new(HeapKind::Cma)
     .unwrap();
 
 // Buffer will automatically be freed when `buffer` goes out of scope.

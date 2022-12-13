@@ -8,12 +8,9 @@
 #![warn(rust_2018_idioms)]
 #![deny(clippy::all)]
 #![deny(clippy::pedantic)]
-#![deny(clippy::nursery)]
 #![deny(clippy::cargo)]
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::cast_sign_loss)]
-#![allow(clippy::unreadable_literal)]
-#![allow(clippy::use_self)]
 
 use std::{
     fs::File,
@@ -30,13 +27,27 @@ use strum_macros::Display;
 /// Error Type for dma-heap
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    /// An Error happened when allocating a buffer
-    #[error("Couldn't allocate the buffer")]
-    Allocation(#[from] nix::Error),
+    /// The requested DMA Heap doesn't exist
+    #[error("The Requested DMA Heap Type ({0}) doesn't exist: {1}")]
+    Missing(HeapKind, String),
 
-    /// An Error happened when opening the Heap
-    #[error("Couldn't open the DMA-Buf Heap")]
-    Open(#[from] std::io::Error),
+    /// An Error occured while accessing the DMA Heap
+    #[error("An Error occurred while accessing the DMA Heap")]
+    Access(std::io::Error),
+
+    /// The allocation is invalid
+    #[error("The requested allocation is invalid: {0} bytes")]
+    InvalidAllocation(usize),
+
+    /// There is no memory left to allocate from the DMA Heap
+    #[error("No Memory Left in the Heap")]
+    NoMemoryLeft,
+}
+
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Self {
+        Self::Access(err)
+    }
 }
 
 /// Generic Result type with [Error] as its error variant
@@ -44,7 +55,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Various Types of DMA-Buf Heap
 #[derive(Clone, Copy, Debug, Display)]
-pub enum DmaBufHeapType {
+pub enum HeapKind {
     /// A Heap backed by the Contiguous Memory Allocator in the Linux kernel, returning physically
     /// contiguous, cached, buffers
     Cma,
@@ -56,26 +67,29 @@ pub enum DmaBufHeapType {
 
 /// Our DMA-Buf Heap
 #[derive(Debug)]
-pub struct DmaBufHeap {
+pub struct Heap {
     file: File,
-    name: DmaBufHeapType,
+    name: HeapKind,
 }
 
-impl DmaBufHeap {
+impl Heap {
     /// Opens A DMA-Buf Heap of the specified type
     ///
     /// # Errors
     ///
     /// Will return [Error] if the Heap Type is not found in the system, or if the open call fails.
-    pub fn new(name: DmaBufHeapType) -> Result<Self> {
+    pub fn new(name: HeapKind) -> Result<Self> {
         let path = match name {
-            DmaBufHeapType::Cma => "/dev/dma_heap/reserved",
-            DmaBufHeapType::System => "/dev/dma_heap/system",
+            HeapKind::Cma => "/dev/dma_heap/linux,cma",
+            HeapKind::System => "/dev/dma_heap/system",
         };
 
         debug!("Using the {} DMA-Buf Heap, at {}", name, path);
 
-        let file = File::open(path)?;
+        let file = File::open(path).map_err(|err| match err.kind() {
+            std::io::ErrorKind::NotFound => Error::Missing(name, String::from(path)),
+            _ => Error::from(err),
+        })?;
 
         debug!("Heap found!");
 
@@ -83,6 +97,11 @@ impl DmaBufHeap {
     }
 
     /// Allocates a DMA-Buf from the Heap with the specified size
+    ///
+    /// # Panics
+    ///
+    /// If the errno returned by the underlying `ioctl()` cannot be decoded
+    /// into an `std::io::Error`.
     ///
     /// # Errors
     ///
@@ -101,7 +120,15 @@ impl DmaBufHeap {
 
         debug!("Allocating Buffer of size {} on {} Heap", len, self.name);
 
-        let _ = unsafe { dma_heap_alloc(self.file.as_raw_fd(), &mut data) }?;
+        unsafe { dma_heap_alloc(self.file.as_raw_fd(), &mut data) }.map_err(|err| {
+            let err: std::io::Error = err.try_into().unwrap();
+
+            match err.kind() {
+                std::io::ErrorKind::InvalidInput => Error::InvalidAllocation(len),
+                std::io::ErrorKind::OutOfMemory => Error::NoMemoryLeft,
+                _ => Error::from(err),
+            }
+        })?;
 
         debug!("Allocation succeeded, Buffer File Descriptor {}", data.fd);
 

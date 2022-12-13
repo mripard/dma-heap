@@ -14,7 +14,7 @@ repository = "https://github.com/mripard/dma-heap/"
 
 [dependencies]
 nix = "0.26.1"
-log = "0.4.0"
+log = "0.4.17"
 strum = "0.24.1"
-strum_macros = "0.20.0"
-thiserror = "1.0.0"
+strum_macros = "0.24.3"
+thiserror = "1.0.37"
