@@ -121,7 +121,7 @@ impl Heap {
         debug!("Allocating Buffer of size {} on {} Heap", len, self.name);
 
         unsafe { dma_heap_alloc(self.file.as_raw_fd(), &mut data) }.map_err(|err| {
-            let err: std::io::Error = err.try_into().unwrap();
+            let err: std::io::Error = err.into();
 
             match err.kind() {
                 std::io::ErrorKind::InvalidInput => Error::InvalidAllocation(len),
