@@ -16,5 +16,5 @@ repository = "https://github.com/mripard/dma-heap/"
 nix = { version = "0.27.1", features = ["fs", "ioctl"] }
 log = "0.4.20"
 strum = "0.26.1"
-strum_macros = "0.25.3"
+strum_macros = "0.26.1"
 thiserror = "1.0.56"
