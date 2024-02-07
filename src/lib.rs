@@ -55,7 +55,7 @@ impl From<std::io::Error> for Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Various Types of DMA-Buf Heap
-#[derive(Clone, Copy, Debug, Display)]
+#[derive(Clone, Debug, Display)]
 pub enum HeapKind {
     /// A Heap backed by the Contiguous Memory Allocator in the Linux kernel, returning physically
     /// contiguous, cached, buffers
@@ -64,6 +64,9 @@ pub enum HeapKind {
     /// A Heap backed by the vmalloc allocator in the Linux kernel, returning virtually contiguous,
     /// cached, buffers
     System,
+
+    /// The Path to a custom Heap Type.
+    Custom(PathBuf),
 }
 
 /// Our DMA-Buf Heap
@@ -83,6 +86,7 @@ impl Heap {
         let path = match name {
             HeapKind::Cma => PathBuf::from("/dev/dma_heap/linux,cma"),
             HeapKind::System => PathBuf::from("/dev/dma_heap/system"),
+            HeapKind::Custom(ref p) => p.clone(),
         };
 
         debug!("Using the {} DMA-Buf Heap, at {:#?}", name, path);
