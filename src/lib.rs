@@ -15,6 +15,7 @@
 use std::{
     fs::File,
     os::unix::io::{AsRawFd, FromRawFd, OwnedFd, RawFd},
+    path::PathBuf,
 };
 
 mod ioctl;
@@ -29,7 +30,7 @@ use strum_macros::Display;
 pub enum Error {
     /// The requested DMA Heap doesn't exist
     #[error("The Requested DMA Heap Type ({0}) doesn't exist: {1}")]
-    Missing(HeapKind, String),
+    Missing(HeapKind, PathBuf),
 
     /// An Error occured while accessing the DMA Heap
     #[error("An Error occurred while accessing the DMA Heap")]
@@ -80,14 +81,14 @@ impl Heap {
     /// Will return [Error] if the Heap Type is not found in the system, or if the open call fails.
     pub fn new(name: HeapKind) -> Result<Self> {
         let path = match name {
-            HeapKind::Cma => "/dev/dma_heap/linux,cma",
-            HeapKind::System => "/dev/dma_heap/system",
+            HeapKind::Cma => PathBuf::from("/dev/dma_heap/linux,cma"),
+            HeapKind::System => PathBuf::from("/dev/dma_heap/system"),
         };
 
-        debug!("Using the {} DMA-Buf Heap, at {}", name, path);
+        debug!("Using the {} DMA-Buf Heap, at {:#?}", name, path);
 
-        let file = File::open(path).map_err(|err| match err.kind() {
-            std::io::ErrorKind::NotFound => Error::Missing(name, String::from(path)),
+        let file = File::open(&path).map_err(|err| match err.kind() {
+            std::io::ErrorKind::NotFound => Error::Missing(name.clone(), path),
             _ => Error::from(err),
         })?;
 
