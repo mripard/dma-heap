@@ -15,6 +15,7 @@
 use std::{
     fs::File,
     os::unix::io::{AsRawFd, FromRawFd, OwnedFd, RawFd},
+    path::PathBuf,
 };
 
 mod ioctl;
@@ -29,7 +30,7 @@ use strum_macros::Display;
 pub enum Error {
     /// The requested DMA Heap doesn't exist
     #[error("The Requested DMA Heap Type ({0}) doesn't exist: {1}")]
-    Missing(HeapKind, String),
+    Missing(HeapKind, PathBuf),
 
     /// An Error occured while accessing the DMA Heap
     #[error("An Error occurred while accessing the DMA Heap")]
@@ -54,7 +55,7 @@ impl From<std::io::Error> for Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Various Types of DMA-Buf Heap
-#[derive(Clone, Copy, Debug, Display)]
+#[derive(Clone, Debug, Display)]
 pub enum HeapKind {
     /// A Heap backed by the Contiguous Memory Allocator in the Linux kernel, returning physically
     /// contiguous, cached, buffers
@@ -63,6 +64,9 @@ pub enum HeapKind {
     /// A Heap backed by the vmalloc allocator in the Linux kernel, returning virtually contiguous,
     /// cached, buffers
     System,
+
+    /// The Path to a custom Heap Type.
+    Custom(PathBuf),
 }
 
 /// Our DMA-Buf Heap
@@ -80,14 +84,15 @@ impl Heap {
     /// Will return [Error] if the Heap Type is not found in the system, or if the open call fails.
     pub fn new(name: HeapKind) -> Result<Self> {
         let path = match name {
-            HeapKind::Cma => "/dev/dma_heap/linux,cma",
-            HeapKind::System => "/dev/dma_heap/system",
+            HeapKind::Cma => PathBuf::from("/dev/dma_heap/linux,cma"),
+            HeapKind::System => PathBuf::from("/dev/dma_heap/system"),
+            HeapKind::Custom(ref p) => p.clone(),
         };
 
-        debug!("Using the {} DMA-Buf Heap, at {}", name, path);
+        debug!("Using the {} DMA-Buf Heap, at {:#?}", name, path);
 
-        let file = File::open(path).map_err(|err| match err.kind() {
-            std::io::ErrorKind::NotFound => Error::Missing(name, String::from(path)),
+        let file = File::open(&path).map_err(|err| match err.kind() {
+            std::io::ErrorKind::NotFound => Error::Missing(name.clone(), path),
             _ => Error::from(err),
         })?;
 
