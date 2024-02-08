@@ -137,8 +137,12 @@ impl Heap {
 
         debug!("Allocation succeeded, Buffer File Descriptor {}", data.fd);
 
-        // Safe because we have confirmed that the ioctl has succeeded, thus
-        // the FD is valid.
-        Ok(unsafe { OwnedFd::from_raw_fd(data.fd as RawFd) })
+        // SAFETY: This function is unsafe because the file descriptor might not be valid, might
+        // have been closed, or we might not be the sole owners of it. However, they are all
+        // mitigated by the fact that the kernel has just given us that file descriptor so it's
+        // valid, we are the exclusive owner of that fd, and we haven't closed it either.
+        let fd = unsafe { OwnedFd::from_raw_fd(data.fd as RawFd) };
+
+        Ok(fd)
     }
 }
