@@ -1,4 +1,8 @@
-use nix::ioctl_readwrite;
+use std::os::fd::{AsRawFd, BorrowedFd, RawFd};
+
+use nix::{fcntl::OFlag, ioctl_readwrite};
+
+use crate::{HeapError, Result};
 
 const DMA_HEAP_IOC_MAGIC: u8 = b'H';
 const DMA_HEAP_IOC_ALLOC: u8 = 0;
@@ -13,8 +17,35 @@ pub(crate) struct dma_heap_allocation_data {
 }
 
 ioctl_readwrite!(
-    dma_heap_alloc,
+    dma_heap_alloc_ioctl,
     DMA_HEAP_IOC_MAGIC,
     DMA_HEAP_IOC_ALLOC,
     dma_heap_allocation_data
 );
+
+pub(crate) fn dma_heap_alloc(fd: BorrowedFd<'_>, len: usize) -> Result<RawFd> {
+    let mut fd_flags = OFlag::empty();
+
+    fd_flags.insert(OFlag::O_CLOEXEC);
+    fd_flags.insert(OFlag::O_RDWR);
+
+    let mut data = dma_heap_allocation_data {
+        len: len as u64,
+        fd_flags: fd_flags.bits() as u32,
+        ..dma_heap_allocation_data::default()
+    };
+
+    let res = unsafe { dma_heap_alloc_ioctl(fd.as_raw_fd(), &mut data) };
+
+    let _ret: i32 = res.map_err(|err| {
+        let err: std::io::Error = err.into();
+
+        match err.kind() {
+            std::io::ErrorKind::InvalidInput => HeapError::InvalidAllocation(len),
+            std::io::ErrorKind::OutOfMemory => HeapError::NoMemoryLeft,
+            _ => HeapError::from(err),
+        }
+    })?;
+
+    Ok(data.fd as RawFd)
+}
