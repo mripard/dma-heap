@@ -27,7 +27,7 @@ use strum_macros::Display;
 
 /// Error Type for dma-heap
 #[derive(thiserror::Error, Debug)]
-pub enum Error {
+pub enum HeapError {
     /// The requested DMA Heap doesn't exist
     #[error("The Requested DMA Heap Type ({0}) doesn't exist: {1}")]
     Missing(HeapKind, PathBuf),
@@ -45,14 +45,14 @@ pub enum Error {
     NoMemoryLeft,
 }
 
-impl From<std::io::Error> for Error {
+impl From<std::io::Error> for HeapError {
     fn from(err: std::io::Error) -> Self {
         Self::Access(err)
     }
 }
 
 /// Generic Result type with [Error] as its error variant
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, HeapError>;
 
 /// Various Types of DMA-Buf Heap
 #[derive(Clone, Debug, Display)]
@@ -92,8 +92,8 @@ impl Heap {
         debug!("Using the {} DMA-Buf Heap, at {:#?}", name, path);
 
         let file = File::open(&path).map_err(|err| match err.kind() {
-            std::io::ErrorKind::NotFound => Error::Missing(name.clone(), path),
-            _ => Error::from(err),
+            std::io::ErrorKind::NotFound => HeapError::Missing(name.clone(), path),
+            _ => HeapError::from(err),
         })?;
 
         debug!("Heap found!");
@@ -129,9 +129,9 @@ impl Heap {
             let err: std::io::Error = err.into();
 
             match err.kind() {
-                std::io::ErrorKind::InvalidInput => Error::InvalidAllocation(len),
-                std::io::ErrorKind::OutOfMemory => Error::NoMemoryLeft,
-                _ => Error::from(err),
+                std::io::ErrorKind::InvalidInput => HeapError::InvalidAllocation(len),
+                std::io::ErrorKind::OutOfMemory => HeapError::NoMemoryLeft,
+                _ => HeapError::from(err),
             }
         })?;
 
