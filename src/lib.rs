@@ -85,10 +85,10 @@ impl Heap {
     ///
     /// Will return [Error] if the Heap Type is not found in the system, or if the open call fails.
     pub fn new(name: HeapKind) -> Result<Self> {
-        let path = match name {
+        let path = match &name {
             HeapKind::Cma => PathBuf::from("/dev/dma_heap/linux,cma"),
             HeapKind::System => PathBuf::from("/dev/dma_heap/system"),
-            HeapKind::Custom(ref p) => p.clone(),
+            HeapKind::Custom(p) => p.clone(),
         };
 
         debug!("Using the {} DMA-Buf Heap, at {:#?}", name, path);
