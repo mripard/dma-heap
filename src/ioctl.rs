@@ -5,11 +5,11 @@ const DMA_HEAP_IOC_ALLOC: u8 = 0;
 
 #[derive(Default)]
 #[repr(C)]
-pub struct dma_heap_allocation_data {
-    pub len: u64,
-    pub fd: u32,
-    pub fd_flags: u32,
-    pub heap_flags: u64,
+pub(crate) struct dma_heap_allocation_data {
+    pub(crate) len: u64,
+    pub(crate) fd: u32,
+    pub(crate) fd_flags: u32,
+    pub(crate) heap_flags: u64,
 }
 
 ioctl_readwrite!(
