@@ -31,6 +31,11 @@ pub(crate) fn dma_heap_alloc(fd: BorrowedFd<'_>, len: usize) -> Result<RawFd> {
 
     let mut data = dma_heap_allocation_data {
         len: len as u64,
+
+        // Nix Oflags representation is an i32 for some reason, but the kernel actually expects an
+        // u32 because the sign doesn't matter for a bitmask. Since the conversion between i32 and
+        // u32 is a noop, we can cast it directly and expect it to work.
+        #[allow(clippy::cast_sign_loss)]
         fd_flags: fd_flags.bits() as u32,
         ..dma_heap_allocation_data::default()
     };
@@ -42,6 +47,8 @@ pub(crate) fn dma_heap_alloc(fd: BorrowedFd<'_>, len: usize) -> Result<RawFd> {
     let _ret: i32 = res.map_err(|err| {
         let err: std::io::Error = err.into();
 
+        #[cfg_attr(feature = "nightly", allow(non_exhaustive_omitted_patterns))]
+        #[allow(clippy::wildcard_enum_match_arm)]
         match err.kind() {
             std::io::ErrorKind::InvalidInput => HeapError::InvalidAllocation(len),
             std::io::ErrorKind::OutOfMemory => HeapError::NoMemoryLeft,

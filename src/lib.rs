@@ -2,15 +2,26 @@
 // Licensed under the MIT License
 // See the LICENSE file or <http://opensource.org/licenses/MIT>
 
+#![cfg_attr(
+    feature = "nightly",
+    feature(
+        type_privacy_lints,
+        non_exhaustive_omitted_patterns_lint,
+        strict_provenance
+    )
+)]
+#![cfg_attr(
+    feature = "nightly",
+    warn(
+        fuzzy_provenance_casts,
+        lossy_provenance_casts,
+        unnameable_types,
+        non_exhaustive_omitted_patterns,
+        clippy::infinite_loop,
+        clippy::empty_enum_variants_with_brackets
+    )
+)]
 #![doc = include_str!("../README.md")]
-#![warn(missing_debug_implementations)]
-#![warn(missing_docs)]
-#![warn(rust_2018_idioms)]
-#![deny(clippy::all)]
-#![deny(clippy::pedantic)]
-#![deny(clippy::cargo)]
-#![allow(clippy::cast_possible_wrap)]
-#![allow(clippy::cast_sign_loss)]
 
 use std::{
     fs::File,
@@ -93,6 +104,8 @@ impl Heap {
 
         debug!("Using the {} DMA-Buf Heap, at {:#?}", name, path);
 
+        #[cfg_attr(feature = "nightly", allow(non_exhaustive_omitted_patterns))]
+        #[allow(clippy::wildcard_enum_match_arm)]
         let file = File::open(&path).map_err(|err| match err.kind() {
             std::io::ErrorKind::NotFound => HeapError::Missing(name.clone(), path),
             _ => HeapError::from(err),
