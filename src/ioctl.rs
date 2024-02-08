@@ -1,6 +1,14 @@
-use std::os::fd::{AsRawFd, BorrowedFd, RawFd};
+use std::{
+    io,
+    os::fd::{BorrowedFd, FromRawFd, RawFd},
+};
 
-use nix::{fcntl::OFlag, ioctl_readwrite};
+use rustix::{
+    fd::OwnedFd,
+    fs::OFlags,
+    io::Errno,
+    ioctl::{ioctl, ReadWriteOpcode, Updater},
+};
 
 use crate::{HeapError, Result};
 
@@ -9,52 +17,52 @@ const DMA_HEAP_IOC_ALLOC: u8 = 0;
 
 #[derive(Default)]
 #[repr(C)]
-pub(crate) struct dma_heap_allocation_data {
-    pub(crate) len: u64,
-    pub(crate) fd: u32,
-    pub(crate) fd_flags: u32,
-    pub(crate) heap_flags: u64,
+struct dma_heap_allocation_data {
+    len: u64,
+    fd: u32,
+    fd_flags: u32,
+    heap_flags: u64,
 }
 
-ioctl_readwrite!(
-    dma_heap_alloc_ioctl,
-    DMA_HEAP_IOC_MAGIC,
-    DMA_HEAP_IOC_ALLOC,
-    dma_heap_allocation_data
-);
+fn dma_heap_alloc_ioctl(
+    fd: BorrowedFd<'_>,
+    data: &mut dma_heap_allocation_data,
+) -> core::result::Result<(), Errno> {
+    type Opcode = ReadWriteOpcode<DMA_HEAP_IOC_MAGIC, DMA_HEAP_IOC_ALLOC, dma_heap_allocation_data>;
 
-pub(crate) fn dma_heap_alloc(fd: BorrowedFd<'_>, len: usize) -> Result<RawFd> {
-    let mut fd_flags = OFlag::empty();
+    // SAFETY: This function is unsafe because the opcode has to be valid, and the value type must
+    // match. We have checked those, so we're good.
+    let ioctl_type = unsafe { Updater::<Opcode, dma_heap_allocation_data>::new(data) };
 
-    fd_flags.insert(OFlag::O_CLOEXEC);
-    fd_flags.insert(OFlag::O_RDWR);
+    // SAFETY: This function is unsafe because the driver isn't guaranteed to implement the ioctl,
+    // and to implement it properly. We don't have much of a choice and still have to trust the
+    // kernel there.
+    unsafe { ioctl(fd, ioctl_type) }
+}
+
+pub(crate) fn dma_heap_alloc(fd: BorrowedFd<'_>, len: usize) -> Result<OwnedFd> {
+    let mut fd_flags = OFlags::empty();
+
+    fd_flags.insert(OFlags::CLOEXEC);
+    fd_flags.insert(OFlags::RDWR);
 
     let mut data = dma_heap_allocation_data {
         len: len as u64,
-
-        // Nix Oflags representation is an i32 for some reason, but the kernel actually expects an
-        // u32 because the sign doesn't matter for a bitmask. Since the conversion between i32 and
-        // u32 is a noop, we can cast it directly and expect it to work.
-        #[allow(clippy::cast_sign_loss)]
-        fd_flags: fd_flags.bits() as u32,
+        fd_flags: fd_flags.bits(),
         ..dma_heap_allocation_data::default()
     };
 
-    // SAFETY: This function is unsafe because the file descriptor might be invalid. However, the
-    // BorrowedFd Rust type guarantees its validity so we are safe there.
-    let res = unsafe { dma_heap_alloc_ioctl(fd.as_raw_fd(), &mut data) };
-
-    let _ret: i32 = res.map_err(|err| {
-        let err: std::io::Error = err.into();
-
-        #[cfg_attr(feature = "nightly", allow(non_exhaustive_omitted_patterns))]
-        #[allow(clippy::wildcard_enum_match_arm)]
-        match err.kind() {
-            std::io::ErrorKind::InvalidInput => HeapError::InvalidAllocation(len),
-            std::io::ErrorKind::OutOfMemory => HeapError::NoMemoryLeft,
-            _ => HeapError::from(err),
-        }
+    dma_heap_alloc_ioctl(fd, &mut data).map_err(|err| match err {
+        Errno::INVAL => HeapError::InvalidAllocation(len),
+        Errno::NOMEM => HeapError::NoMemoryLeft,
+        _ => io::Error::from_raw_os_error(err.raw_os_error()).into(),
     })?;
 
-    Ok(data.fd as RawFd)
+    // SAFETY: This function is unsafe because the file descriptor might not be valid, might
+    // have been closed, or we might not be the sole owners of it. However, they are all
+    // mitigated by the fact that the kernel has just given us that file descriptor so it's
+    // valid, we are the exclusive owner of that fd, and we haven't closed it either.
+    let fd = unsafe { OwnedFd::from_raw_fd(data.fd as RawFd) };
+
+    Ok(fd)
 }

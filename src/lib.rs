@@ -25,10 +25,7 @@
 
 use std::{
     fs::File,
-    os::{
-        fd::AsFd,
-        unix::io::{FromRawFd, OwnedFd},
-    },
+    os::{fd::AsFd, unix::io::OwnedFd},
     path::PathBuf,
 };
 
@@ -129,15 +126,9 @@ impl Heap {
     pub fn allocate(&self, len: usize) -> Result<OwnedFd> {
         debug!("Allocating Buffer of size {} on {} Heap", len, self.name);
 
-        let raw_fd = dma_heap_alloc(self.file.as_fd(), len)?;
+        let fd = dma_heap_alloc(self.file.as_fd(), len)?;
 
-        debug!("Allocation succeeded, Buffer File Descriptor {}", raw_fd);
-
-        // SAFETY: This function is unsafe because the file descriptor might not be valid, might
-        // have been closed, or we might not be the sole owners of it. However, they are all
-        // mitigated by the fact that the kernel has just given us that file descriptor so it's
-        // valid, we are the exclusive owner of that fd, and we haven't closed it either.
-        let fd = unsafe { OwnedFd::from_raw_fd(raw_fd) };
+        debug!("Allocation succeeded, Buffer File Descriptor {:#?}", fd);
 
         Ok(fd)
     }
