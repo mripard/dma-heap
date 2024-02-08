@@ -17,7 +17,6 @@
         lossy_provenance_casts,
         unnameable_types,
         non_exhaustive_omitted_patterns,
-        clippy::infinite_loop,
         clippy::empty_enum_variants_with_brackets
     )
 )]
