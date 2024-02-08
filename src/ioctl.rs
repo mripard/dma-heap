@@ -35,6 +35,8 @@ pub(crate) fn dma_heap_alloc(fd: BorrowedFd<'_>, len: usize) -> Result<RawFd> {
         ..dma_heap_allocation_data::default()
     };
 
+    // SAFETY: This function is unsafe because the file descriptor might be invalid. However, the
+    // BorrowedFd Rust type guarantees its validity so we are safe there.
     let res = unsafe { dma_heap_alloc_ioctl(fd.as_raw_fd(), &mut data) };
 
     let _ret: i32 = res.map_err(|err| {
