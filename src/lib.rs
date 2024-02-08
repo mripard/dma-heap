@@ -2,32 +2,45 @@
 // Licensed under the MIT License
 // See the LICENSE file or <http://opensource.org/licenses/MIT>
 
+#![cfg_attr(
+    feature = "nightly",
+    feature(
+        type_privacy_lints,
+        non_exhaustive_omitted_patterns_lint,
+        strict_provenance
+    )
+)]
+#![cfg_attr(
+    feature = "nightly",
+    warn(
+        fuzzy_provenance_casts,
+        lossy_provenance_casts,
+        unnameable_types,
+        non_exhaustive_omitted_patterns,
+        clippy::infinite_loop,
+        clippy::empty_enum_variants_with_brackets
+    )
+)]
 #![doc = include_str!("../README.md")]
-#![warn(missing_debug_implementations)]
-#![warn(missing_docs)]
-#![warn(rust_2018_idioms)]
-#![deny(clippy::all)]
-#![deny(clippy::pedantic)]
-#![deny(clippy::cargo)]
-#![allow(clippy::cast_possible_wrap)]
-#![allow(clippy::cast_sign_loss)]
 
 use std::{
     fs::File,
-    os::unix::io::{AsRawFd, FromRawFd, OwnedFd, RawFd},
+    os::{
+        fd::AsFd,
+        unix::io::{FromRawFd, OwnedFd},
+    },
     path::PathBuf,
 };
 
 mod ioctl;
 use ioctl::dma_heap_alloc;
-use ioctl::dma_heap_allocation_data;
 
 use log::debug;
 use strum_macros::Display;
 
 /// Error Type for dma-heap
 #[derive(thiserror::Error, Debug)]
-pub enum Error {
+pub enum HeapError {
     /// The requested DMA Heap doesn't exist
     #[error("The Requested DMA Heap Type ({0}) doesn't exist: {1}")]
     Missing(HeapKind, PathBuf),
@@ -45,14 +58,14 @@ pub enum Error {
     NoMemoryLeft,
 }
 
-impl From<std::io::Error> for Error {
+impl From<std::io::Error> for HeapError {
     fn from(err: std::io::Error) -> Self {
         Self::Access(err)
     }
 }
 
 /// Generic Result type with [Error] as its error variant
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, HeapError>;
 
 /// Various Types of DMA-Buf Heap
 #[derive(Clone, Debug, Display)]
@@ -83,17 +96,19 @@ impl Heap {
     ///
     /// Will return [Error] if the Heap Type is not found in the system, or if the open call fails.
     pub fn new(name: HeapKind) -> Result<Self> {
-        let path = match name {
+        let path = match &name {
             HeapKind::Cma => PathBuf::from("/dev/dma_heap/linux,cma"),
             HeapKind::System => PathBuf::from("/dev/dma_heap/system"),
-            HeapKind::Custom(ref p) => p.clone(),
+            HeapKind::Custom(p) => p.clone(),
         };
 
         debug!("Using the {} DMA-Buf Heap, at {:#?}", name, path);
 
+        #[cfg_attr(feature = "nightly", allow(non_exhaustive_omitted_patterns))]
+        #[allow(clippy::wildcard_enum_match_arm)]
         let file = File::open(&path).map_err(|err| match err.kind() {
-            std::io::ErrorKind::NotFound => Error::Missing(name.clone(), path),
-            _ => Error::from(err),
+            std::io::ErrorKind::NotFound => HeapError::Missing(name.clone(), path),
+            _ => HeapError::from(err),
         })?;
 
         debug!("Heap found!");
@@ -112,33 +127,18 @@ impl Heap {
     ///
     /// Will return [Error] if the underlying ioctl fails.
     pub fn allocate(&self, len: usize) -> Result<OwnedFd> {
-        let mut fd_flags = nix::fcntl::OFlag::empty();
-
-        fd_flags.insert(nix::fcntl::OFlag::O_CLOEXEC);
-        fd_flags.insert(nix::fcntl::OFlag::O_RDWR);
-
-        let mut data = dma_heap_allocation_data {
-            len: len as u64,
-            fd_flags: fd_flags.bits() as u32,
-            ..dma_heap_allocation_data::default()
-        };
-
         debug!("Allocating Buffer of size {} on {} Heap", len, self.name);
 
-        unsafe { dma_heap_alloc(self.file.as_raw_fd(), &mut data) }.map_err(|err| {
-            let err: std::io::Error = err.into();
+        let raw_fd = dma_heap_alloc(self.file.as_fd(), len)?;
 
-            match err.kind() {
-                std::io::ErrorKind::InvalidInput => Error::InvalidAllocation(len),
-                std::io::ErrorKind::OutOfMemory => Error::NoMemoryLeft,
-                _ => Error::from(err),
-            }
-        })?;
+        debug!("Allocation succeeded, Buffer File Descriptor {}", raw_fd);
 
-        debug!("Allocation succeeded, Buffer File Descriptor {}", data.fd);
+        // SAFETY: This function is unsafe because the file descriptor might not be valid, might
+        // have been closed, or we might not be the sole owners of it. However, they are all
+        // mitigated by the fact that the kernel has just given us that file descriptor so it's
+        // valid, we are the exclusive owner of that fd, and we haven't closed it either.
+        let fd = unsafe { OwnedFd::from_raw_fd(raw_fd) };
 
-        // Safe because we have confirmed that the ioctl has succeeded, thus
-        // the FD is valid.
-        Ok(unsafe { OwnedFd::from_raw_fd(data.fd as RawFd) })
+        Ok(fd)
     }
 }

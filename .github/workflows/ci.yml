@@ -1,17 +1,14 @@
-name: Rust
+name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
+
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 env:
   CARGO_TERM_COLOR: always
-
-permissions:
-  pull-requests: write
-  contents: write
 
 jobs:
   build:
@@ -22,20 +19,70 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          components: rustfmt, clippy
           override: true
-      - name: Check Format
-        run: cargo fmt --all -- --check
-      - name: Clippy
-        run: cargo clippy
+
       - name: Build
-        run: cargo build --verbose
-      - name: Run tests
-        run: cargo test --verbose
+        uses: "actions-rs/cargo@v1"
+        with:
+          command: build
+          args: --all-targets --verbose
+
+  build-nightly:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+
+      - name: Build
+        uses: "actions-rs/cargo@v1"
+        with:
+          command: build
+          args: --all-features --all-targets --verbose
+
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Run Tests
+        uses: "actions-rs/cargo@v1"
+        with:
+          command: test
+          args: --verbose
+
+  tests-nightly:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+
+      - name: Run Tests
+        uses: "actions-rs/cargo@v1"
+        with:
+          command: test
+          args: --all-features --verbose
 
   dependabot:
-    needs: build
     runs-on: ubuntu-latest
+    needs: [ build, build-nightly, tests, tests-nightly ]
+
+    permissions:
+      pull-requests: write
+      contents: write
+
     if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request'}}
     steps:
       - name: Dependabot metadata
