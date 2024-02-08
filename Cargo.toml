@@ -1,6 +1,6 @@
 [package]
 name = "dma-heap"
-version = "0.2.2"
+version = "0.3.0"
 authors = ["Maxime Ripard <maxime@cerno.tech>"]
 description = "Linux DMA-Buf Heap Abstraction Library"
 edition = "2021"
