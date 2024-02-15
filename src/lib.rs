@@ -35,6 +35,7 @@ use log::debug;
 use strum_macros::Display;
 
 /// Error Type for dma-heap
+#[non_exhaustive]
 #[derive(thiserror::Error, Debug)]
 pub enum HeapError {
     /// The requested DMA Heap doesn't exist
