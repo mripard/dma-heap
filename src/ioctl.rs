@@ -1,6 +1,6 @@
 use std::{
     io,
-    os::fd::{BorrowedFd, OwnedFd, FromRawFd, RawFd},
+    os::fd::{BorrowedFd, FromRawFd, OwnedFd, RawFd},
 };
 
 use rustix::{
