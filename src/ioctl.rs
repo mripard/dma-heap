@@ -1,10 +1,9 @@
 use std::{
     io,
-    os::fd::{BorrowedFd, FromRawFd, RawFd},
+    os::fd::{BorrowedFd, OwnedFd, FromRawFd, RawFd},
 };
 
 use rustix::{
-    fd::OwnedFd,
     fs::OFlags,
     io::Errno,
     ioctl::{ioctl, ReadWriteOpcode, Updater},
