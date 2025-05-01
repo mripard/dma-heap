@@ -6,7 +6,7 @@ use std::{
 use rustix::{
     fs::OFlags,
     io::Errno,
-    ioctl::{ioctl, ReadWriteOpcode, Updater},
+    ioctl::{ioctl, opcode, Updater},
 };
 
 use crate::{HeapError, Result};
@@ -23,15 +23,16 @@ struct dma_heap_allocation_data {
     heap_flags: u64,
 }
 
+const DMA_HEAP_IOC_ALLOC_OPCODE: u32 =
+    opcode::read_write::<dma_heap_allocation_data>(DMA_HEAP_IOC_MAGIC, DMA_HEAP_IOC_ALLOC);
+
 fn dma_heap_alloc_ioctl(
     fd: BorrowedFd<'_>,
     data: &mut dma_heap_allocation_data,
 ) -> core::result::Result<(), Errno> {
-    type Opcode = ReadWriteOpcode<DMA_HEAP_IOC_MAGIC, DMA_HEAP_IOC_ALLOC, dma_heap_allocation_data>;
-
     // SAFETY: This function is unsafe because the opcode has to be valid, and the value type must
     // match. We have checked those, so we're good.
-    let ioctl_type = unsafe { Updater::<Opcode, dma_heap_allocation_data>::new(data) };
+    let ioctl_type = unsafe { Updater::<DMA_HEAP_IOC_ALLOC_OPCODE, dma_heap_allocation_data>::new(data) };
 
     // SAFETY: This function is unsafe because the driver isn't guaranteed to implement the ioctl,
     // and to implement it properly. We don't have much of a choice and still have to trust the
