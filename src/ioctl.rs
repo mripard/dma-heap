@@ -1,12 +1,12 @@
 use std::{
     io,
-    os::fd::{BorrowedFd, FromRawFd, OwnedFd, RawFd},
+    os::fd::{BorrowedFd, FromRawFd as _, OwnedFd, RawFd},
 };
 
 use rustix::{
     fs::OFlags,
     io::Errno,
-    ioctl::{ioctl, opcode, Updater},
+    ioctl::{Updater, ioctl, opcode},
 };
 
 use crate::{HeapError, Result};
@@ -32,7 +32,8 @@ fn dma_heap_alloc_ioctl(
 ) -> core::result::Result<(), Errno> {
     // SAFETY: This function is unsafe because the opcode has to be valid, and the value type must
     // match. We have checked those, so we're good.
-    let ioctl_type = unsafe { Updater::<DMA_HEAP_IOC_ALLOC_OPCODE, dma_heap_allocation_data>::new(data) };
+    let ioctl_type =
+        unsafe { Updater::<DMA_HEAP_IOC_ALLOC_OPCODE, dma_heap_allocation_data>::new(data) };
 
     // SAFETY: This function is unsafe because the driver isn't guaranteed to implement the ioctl,
     // and to implement it properly. We don't have much of a choice and still have to trust the

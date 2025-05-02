@@ -21,16 +21,16 @@
     )
 )]
 #![doc = include_str!("../README.md")]
+#![allow(unsafe_code)]
 
 use std::{
     fs::File,
-    os::{fd::AsFd, unix::io::OwnedFd},
+    os::{fd::AsFd as _, unix::io::OwnedFd},
     path::PathBuf,
 };
 
 mod ioctl;
 use ioctl::dma_heap_alloc;
-
 use log::debug;
 use strum_macros::Display;
 

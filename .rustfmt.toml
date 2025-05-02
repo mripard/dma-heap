@@ -1,4 +1,7 @@
 unstable_features = true
 
 comment_width = 100
+group_imports = "StdExternalCrate"
+imports_granularity = "Crate"
+style_edition = "2024"
 wrap_comments = true

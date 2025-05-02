@@ -22,12 +22,12 @@ nightly = []
 [lints.rust]
 # Groups
 future_incompatible = { level = "warn", priority = -1 }
+keyword_idents = { level = "warn", priority = -1 }
 nonstandard_style = { level = "warn", priority = -1 }
 rust_2018_idioms = { level = "warn", priority = -1 }
 
 # Individual Lints
 absolute_paths_not_starting_with_crate = "warn"
-keyword_idents = "warn"
 let_underscore_drop = "warn"
 macro_use_extern_crate = "warn"
 missing_abi = "deny"
@@ -42,7 +42,7 @@ single_use_lifetimes = "warn"
 trivial_casts = "warn"
 trivial_numeric_casts = "warn"
 unreachable_pub = "warn"
-# unsafe_code = "deny"
+unsafe_code = "deny"
 unsafe_op_in_unsafe_fn = "warn"
 unused_crate_dependencies = "warn"
 unused_import_braces = "warn"
@@ -65,6 +65,7 @@ suspicious = { level = "warn", priority = -1 }
 # Individual Lints
 ## Restriction Clippy Lints
 alloc_instead_of_core = "warn"
+as_pointer_underscore = "warn"
 assertions_on_result_states = "warn"
 dbg_macro = "warn"
 decimal_literal_representation = "warn"
@@ -79,6 +80,7 @@ get_unwrap = "warn"
 infinite_loop = "warn"
 let_underscore_must_use = "warn"
 let_underscore_untyped = "warn"
+literal_string_with_formatting_args = "warn"
 lossy_float_literal = "warn"
 map_err_ignore = "warn"
 mem_forget = "warn"
@@ -92,8 +94,10 @@ multiple_unsafe_ops_per_block = "warn"
 mutex_atomic = "warn"
 needless_raw_strings = "warn"
 non_ascii_literal = "warn"
+non_zero_suggestions = "warn"
 panic_in_result_fn = "warn"
 partial_pub_fields = "warn"
+pathbuf_init_then_push = "warn"
 print_stdout = "warn"
 redundant_type_annotations = "warn"
 ref_patterns = "warn"
@@ -115,6 +119,8 @@ unnecessary_safety_comment = "warn"
 unnecessary_safety_doc = "warn"
 unnecessary_self_imports = "warn"
 unneeded_field_pattern = "warn"
+unused_result_ok = "warn"
+unused_trait_names = "warn"
 unwrap_in_result = "warn"
 unwrap_used = "warn"
 use_debug = "warn"
