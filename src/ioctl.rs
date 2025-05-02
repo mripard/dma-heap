@@ -63,7 +63,13 @@ pub(crate) fn dma_heap_alloc(fd: BorrowedFd<'_>, len: usize) -> Result<OwnedFd> 
     // have been closed, or we might not be the sole owners of it. However, they are all
     // mitigated by the fact that the kernel has just given us that file descriptor so it's
     // valid, we are the exclusive owner of that fd, and we haven't closed it either.
-    let fd = unsafe { OwnedFd::from_raw_fd(data.fd as RawFd) };
+    let fd = unsafe {
+        #[allow(
+            clippy::cast_possible_wrap,
+            reason = "The sign doesn't matter, the fd is an opaque value anyway."
+        )]
+        OwnedFd::from_raw_fd(data.fd as RawFd)
+    };
 
     Ok(fd)
 }
