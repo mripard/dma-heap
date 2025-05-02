@@ -89,7 +89,7 @@ impl Heap {
 
         let fd = dma_heap_alloc(self.file.as_fd(), len)?;
 
-        debug!("Allocation succeeded, Buffer File Descriptor {:#?}", fd);
+        debug!("Allocation succeeded, Buffer File Descriptor {fd:#?}");
 
         Ok(fd)
     }
