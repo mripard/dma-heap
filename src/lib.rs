@@ -20,6 +20,7 @@
 
 use std::{
     fs::File,
+    io,
     os::{fd::AsFd as _, unix::io::OwnedFd},
     path::PathBuf,
 };
@@ -28,36 +29,6 @@ mod ioctl;
 use ioctl::dma_heap_alloc;
 use log::debug;
 use strum_macros::Display;
-
-/// Error Type for dma-heap
-#[non_exhaustive]
-#[derive(thiserror::Error, Debug)]
-pub enum HeapError {
-    /// The requested DMA Heap doesn't exist
-    #[error("The Requested DMA Heap Type ({0}) doesn't exist: {1}")]
-    Missing(HeapKind, PathBuf),
-
-    /// An Error occured while accessing the DMA Heap
-    #[error("An Error occurred while accessing the DMA Heap")]
-    Access(std::io::Error),
-
-    /// The allocation is invalid
-    #[error("The requested allocation is invalid: {0} bytes")]
-    InvalidAllocation(usize),
-
-    /// There is no memory left to allocate from the DMA Heap
-    #[error("No Memory Left in the Heap")]
-    NoMemoryLeft,
-}
-
-impl From<std::io::Error> for HeapError {
-    fn from(err: std::io::Error) -> Self {
-        Self::Access(err)
-    }
-}
-
-/// Generic Result type with [Error] as its error variant
-pub type Result<T> = core::result::Result<T, HeapError>;
 
 /// Various Types of DMA-Buf Heap
 #[derive(Clone, Debug, Display)]
@@ -87,7 +58,7 @@ impl Heap {
     /// # Errors
     ///
     /// Will return [Error] if the Heap Type is not found in the system, or if the open call fails.
-    pub fn new(name: HeapKind) -> Result<Self> {
+    pub fn new(name: HeapKind) -> io::Result<Self> {
         let path = match &name {
             HeapKind::Cma => PathBuf::from("/dev/dma_heap/linux,cma"),
             HeapKind::System => PathBuf::from("/dev/dma_heap/system"),
@@ -96,12 +67,7 @@ impl Heap {
 
         debug!("Using the {} DMA-Buf Heap, at {:#?}", name, path);
 
-        #[cfg_attr(feature = "nightly", allow(non_exhaustive_omitted_patterns))]
-        #[allow(clippy::wildcard_enum_match_arm)]
-        let file = File::open(&path).map_err(|err| match err.kind() {
-            std::io::ErrorKind::NotFound => HeapError::Missing(name.clone(), path),
-            _ => HeapError::from(err),
-        })?;
+        let file = File::open(&path)?;
 
         debug!("Heap found!");
 
@@ -118,7 +84,7 @@ impl Heap {
     /// # Errors
     ///
     /// Will return [Error] if the underlying ioctl fails.
-    pub fn allocate(&self, len: usize) -> Result<OwnedFd> {
+    pub fn allocate(&self, len: usize) -> io::Result<OwnedFd> {
         debug!("Allocating Buffer of size {} on {} Heap", len, self.name);
 
         let fd = dma_heap_alloc(self.file.as_fd(), len)?;
