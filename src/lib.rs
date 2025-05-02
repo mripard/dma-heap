@@ -65,7 +65,7 @@ impl Heap {
             HeapKind::Custom(p) => p.clone(),
         };
 
-        debug!("Using the {} DMA-Buf Heap, at {:#?}", name, path);
+        debug!("Using the {name} DMA-Buf Heap, at {}", path.display());
 
         let file = File::open(&path)?;
 
