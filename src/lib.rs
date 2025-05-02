@@ -4,7 +4,7 @@
 
 #![cfg_attr(
     feature = "nightly",
-    feature(non_exhaustive_omitted_patterns_lint, strict_provenance)
+    feature(non_exhaustive_omitted_patterns_lint, strict_provenance_lints)
 )]
 #![cfg_attr(
     feature = "nightly",
