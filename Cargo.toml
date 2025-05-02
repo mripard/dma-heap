@@ -11,7 +11,7 @@ categories = ["api-bindings", "os::linux-apis"]
 repository = "https://github.com/mripard/dma-heap/"
 
 [dependencies]
-log = "0.4.20"
+log = "0.4.27"
 rustix = { version = "1.0.7", features = ["fs"] }
 strum_macros = "0.27.1"
 
