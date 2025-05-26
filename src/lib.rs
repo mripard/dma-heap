@@ -18,6 +18,7 @@
 #![doc = include_str!("../README.md")]
 #![allow(unsafe_code)]
 
+use core::fmt;
 use std::{
     fs::File,
     io,
@@ -28,10 +29,9 @@ use std::{
 mod ioctl;
 use ioctl::dma_heap_alloc;
 use log::debug;
-use strum_macros::Display;
 
 /// Various Types of DMA-Buf Heap
-#[derive(Clone, Debug, Display)]
+#[derive(Clone, Debug)]
 pub enum HeapKind {
     /// A Heap backed by the Contiguous Memory Allocator in the Linux kernel, returning physically
     /// contiguous, cached, buffers
@@ -43,6 +43,16 @@ pub enum HeapKind {
 
     /// The Path to a custom Heap Type.
     Custom(PathBuf),
+}
+
+impl fmt::Display for HeapKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            HeapKind::Cma => f.write_str("CMA"),
+            HeapKind::System => f.write_str("System"),
+            HeapKind::Custom(p) => f.write_fmt(format_args!("Custom Heap ({})", p.display())),
+        }
+    }
 }
 
 /// Our DMA-Buf Heap
