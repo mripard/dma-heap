@@ -37,14 +37,9 @@ fn dma_heap_alloc_ioctl(fd: BorrowedFd<'_>, data: &mut dma_heap_allocation_data)
 }
 
 pub(crate) fn dma_heap_alloc(fd: BorrowedFd<'_>, len: usize) -> io::Result<OwnedFd> {
-    let mut fd_flags = OFlags::empty();
-
-    fd_flags.insert(OFlags::CLOEXEC);
-    fd_flags.insert(OFlags::RDWR);
-
     let mut data = dma_heap_allocation_data {
         len: len as u64,
-        fd_flags: fd_flags.bits(),
+        fd_flags: OFlags::union(OFlags::CLOEXEC, OFlags::RDWR).bits(),
         ..dma_heap_allocation_data::default()
     };
 
