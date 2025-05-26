@@ -11,8 +11,11 @@ categories = ["api-bindings", "os::linux-apis"]
 repository = "https://github.com/mripard/dma-heap/"
 
 [dependencies]
-log = "0.4.27"
-rustix = { version = "1.0.7", features = ["fs"] }
+log = { version = "0.4.27", default-features = false, features = ["std"] }
+rustix = { version = "1.0.7", default-features = false, features = [
+    "fs",
+    "std",
+] }
 
 [features]
 nightly = []
